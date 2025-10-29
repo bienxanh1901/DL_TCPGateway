@@ -1,0 +1,4 @@
+build*
+.vscode
+start_local.sh
+CMakeLists.txt.user

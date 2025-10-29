@@ -1,0 +1,3 @@
+[submodule "lib/DL_Protocol"]
+	path = lib/DL_Protocol
+	url = git@github.com:bienxanh1901/DL_Protocol.git
