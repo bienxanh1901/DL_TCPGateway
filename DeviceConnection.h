@@ -33,6 +33,7 @@ public:
     States state() const;
 
 private:
+    void produce(const Message& msg);
     bool send(Message& msg);
     bool handleConnectState(Message& msg);
     bool handleCommunicationState(Message& msg);

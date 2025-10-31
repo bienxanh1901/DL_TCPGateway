@@ -5,6 +5,8 @@ project(DataLoggerGateway VERSION 1.0.0)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+find_package(CppKafka REQUIRED)
+
 file(GLOB SOURCES "*.cpp" "*.h")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/logging/include)
@@ -20,6 +22,7 @@ target_link_libraries(${PROJECT_NAME}
   Logging
   Networking
   DataloggerProtocol
+  CppKafka::cppkafka
 )
 
 install (TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin)

@@ -1,5 +1,5 @@
 #include "DeviceConnection.h"
-#include <VMCommon/Utils.h>
+#include "KafkaProducer.h"
 #include <Logging/LogManager.h>
 #include <DataLoggerProtocol/GeneralResponseMessageBody.h>
 #include <DataLoggerProtocol/DataUploadMessageBody.h>
@@ -61,8 +61,7 @@ void DeviceConnection::handleIncommingMessage(ByteArray& data)
             continue;
         }
 
-        LogManager::instance()->info("{} << [RECV] << {}", m_id, msg.toJson().dump());
-        LogManager::instance()->debug("{} << [RECV] << {} << {}", m_id, MessageCodeStr(msg.header().code()), ss.str());
+        LogManager::instance()->debug("{} << [RECV] << {}", m_id, ss.str());
         m_seq = msg.header().seq() + 1;
 
         ss.clear();
@@ -82,8 +81,6 @@ void DeviceConnection::handleIncommingMessage(ByteArray& data)
 
 void DeviceConnection::onMessageSend()
 {
-    LogManager::instance()->info("{} << [SEND SUCCESS]", m_id);
-
     switch (m_state) {
     case LoginState:
         m_state = CommunicationState;
@@ -98,8 +95,7 @@ bool DeviceConnection::send(Message& msg)
     std::stringstream ss;
     ByteArray data(msg.package());
     printHexArray(data, ss);
-    LogManager::instance()->info("{} << [SEND] << {} ", m_id, msg.toJson().dump());
-    LogManager::instance()->debug("{} << [SEND] << {} << {}", m_id, MessageCodeStr(msg.header().code()), ss.str());
+    LogManager::instance()->debug("{} << [SEND] << {}", m_id, ss.str());
 
     if (data.empty()) {
         return false;
@@ -140,6 +136,7 @@ bool DeviceConnection::onLoginMessage(Message& msg)
     auto* body = dynamic_cast<LoginMessageBody*>(msg.body());
     m_id = body->id();
     m_state = LoginState;
+    produce(msg);
     return generalResponse(msg.header().seq());
 }
 
@@ -151,8 +148,7 @@ bool DeviceConnection::onTerminalHeartBeat(Message& msg)
 
 bool DeviceConnection::onDataUploadDataMessage(Message& msg)
 {
-    auto* body = dynamic_cast<DataUploadMessageBody*>(msg.body());
-
+    produce(msg);
     return generalResponse(msg.header().seq(), Success);
 }
 
@@ -173,6 +169,13 @@ DeviceConnection::States DeviceConnection::state() const
 mg_connection* DeviceConnection::conn() const
 {
     return m_conn;
+}
+
+void DeviceConnection::produce(const Message &msg)
+{
+    std::string jsonData(msg.toJson().dump());
+    LogManager::instance()->info("{} << [RECV] << {}", m_id, jsonData);
+    KafkaProducer::instance()->produce(m_id, jsonData);
 }
 
 std::string DeviceConnection::addr() const
